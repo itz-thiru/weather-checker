@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Checker | Multi-Hazard Early Warning</title>
+
+<!-- Leaflet map library -->
+<link rel="stylesheet"
+ href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+:root{
+  --bg:#071827;
+  --card:rgba(255,255,255,.09);
+  --card2:rgba(255,255,255,.14);
+  --border:rgba(255,255,255,.15);
+  --text:#fff;
+  --muted:#a9bac9;
+  --blue:#25b7ff;
+  --yellow:#ffd166;
+  --green:#28d17c;
+  --orange:#ff9f43;
+  --red:#ff4d5e;
+  --shadow:0 20px 60px rgba(0,0,0,.25);
+}
+
+body{
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  min-height:100vh;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 10%,#126481 0,transparent 35%),
+    radial-gradient(circle at 90% 20%,#173b69 0,transparent 35%),
+    linear-gradient(135deg,#071827,#0b2940);
+  transition:.4s;
+}
+
+body.light{
+  --bg:#edf7fc;
+  --card:rgba(255,255,255,.75);
+  --card2:rgba(255,255,255,.9);
+  --border:rgba(20,60,80,.12);
+  --text:#102331;
+  --muted:#60727e;
+  background:linear-gradient(135deg,#c9f2ff,#eef8ff);
+}
+
+body.rain{
+  background:
+    linear-gradient(rgba(8,30,48,.65),rgba(8,30,48,.85)),
+    linear-gradient(135deg,#147a9b,#19375e);
+}
+
+body.hot{
+  background:
+    radial-gradient(circle at 50% 10%,#ff8c42,transparent 30%),
+    linear-gradient(135deg,#5d1c18,#22111b);
+}
+
+button,input{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.container{
+  width:min(1200px,94%);
+  margin:auto;
+  padding:25px 0 45px;
+}
+
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:22px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.brand-icon{
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  border-radius:15px;
+  background:linear-gradient(135deg,#21b7ff,#7867ff);
+  font-size:25px;
+  box-shadow:0 10px 30px rgba(37,183,255,.25);
+}
+
+.brand h1{
+  font-size:24px;
+}
+
+.brand h1 span{
+  color:var(--yellow);
+}
+
+.brand small{
+  display:block;
+  color:var(--muted);
+  margin-top:3px;
+}
+
+.header-actions{
+  display:flex;
+  gap:8px;
+}
+
+.icon-btn{
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  padding:11px 14px;
+  border-radius:12px;
+}
+
+.search-area{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.search-box{
+  display:flex;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+}
+
+.search-box span{
+  display:grid;
+  place-items:center;
+  padding-left:16px;
+}
+
+.search-box input{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  padding:16px;
+}
+
+.search-box input::placeholder{
+  color:var(--muted);
+}
+
+.primary{
+  border:0;
+  padding:0 22px;
+  border-radius:15px;
+  color:#071827;
+  background:linear-gradient(135deg,#ffd166,#ffb703);
+  font-weight:800;
+}
+
+.location-btn{
+  border:1px solid var(--border);
+  color:var(--text);
+  background:var(--card);
+  padding:11px 15px;
+  border-radius:12px;
+  margin-bottom:18px;
+}
+
+.message{
+  display:none;
+  padding:12px 16px;
+  border-radius:12px;
+  background:rgba(255,193,7,.14);
+  border:1px solid rgba(255,193,7,.3);
+  margin-bottom:18px;
+}
+
+.grid{
+  display:grid;
+  gap:18px;
+}
+
+.hero-grid{
+  grid-template-columns:1.55fr .8fr;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:22px;
+  backdrop-filter:blur(18px);
+  box-shadow:var(--shadow);
+}
+
+.location-title{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+}
+
+.location-title h2{
+  font-size:28px;
+}
+
+.muted{
+  color:var(--muted);
+}
+
+.favorite{
+  width:43px;
+  height:43px;
+  border:0;
+  border-radius:13px;
+  background:var(--card2);
+  color:var(--text);
+  font-size:22px;
+}
+
+.weather-main{
+  text-align:center;
+  padding:10px 0 20px;
+}
+
+.weather-icon{
+  font-size:78px;
+  margin:12px;
+}
+
+.temperature{
+  font-size:64px;
+  line-height:1;
+  font-weight:900;
+}
+
+.condition{
+  font-size:20px;
+  font-weight:700;
+  margin-top:9px;
+}
+
+.advice{
+  color:var(--yellow);
+  margin-top:10px;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+
+.stat{
+  padding:15px 10px;
+  text-align:center;
+  border-radius:16px;
+  background:var(--card2);
+}
+
+.stat .label{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.stat strong{
+  display:block;
+  font-size:18px;
+  margin-top:5px;
+}
+
+.unit-switch{
+  display:flex;
+  justify-content:center;
+  gap:5px;
+  margin-top:16px;
+}
+
+.unit-switch button{
+  border:1px solid var(--border);
+  color:var(--text);
+  background:var(--card);
+  padding:7px 13px;
+  border-radius:9px;
+}
+
+.unit-switch .selected{
+  background:var(--yellow);
+  color:#111;
+}
+
+.section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.section-title h2{
+  font-size:19px;
+}
+
+.risk-grid{
+  grid-template-columns:repeat(2,1fr);
+}
+
+.risk-card{
+  padding:18px;
+  border-radius:18px;
+  background:var(--card);
+  border:1px solid var(--border);
+}
+
+.risk-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.risk-icon{
+  font-size:27px;
+}
+
+.risk-score{
+  font-size:27px;
+  font-weight:900;
+}
+
+.progress{
+  height:8px;
+  background:rgba(255,255,255,.1);
+  border-radius:10px;
+  margin:13px 0 9px;
+  overflow:hidden;
+}
+
+.progress span{
+  display:block;
+  height:100%;
+  width:0;
+  border-radius:10px;
+  transition:1s;
+}
+
+.low{color:var(--green)}
+.moderate{color:var(--orange)}
+.high{color:#ff7043}
+.critical{color:var(--red)}
+
+.progress .low-bg{background:var(--green)}
+.progress .moderate-bg{background:var(--orange)}
+.progress .high-bg{background:#ff7043}
+.progress .critical-bg{background:var(--red)}
+
+.risk-description{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.dashboard{
+  grid-template-columns:1fr 1fr 1fr 1fr;
+}
+
+.metric{
+  padding:17px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:17px;
+}
+
+.metric span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.metric strong{
+  display:block;
+  font-size:25px;
+  margin-top:5px;
+}
+
+.alert{
+  border-left:5px solid var(--red);
+  background:rgba(255,77,94,.10);
+}
+
+.alert h3{
+  color:#ff6877;
+  margin-bottom:7px;
+}
+
+.alert p{
+  color:var(--muted);
+  line-height:1.6;
+  font-size:14px;
+}
+
+.action{
+  margin-top:12px;
+  padding:12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.07);
+  font-size:13px;
+  line-height:1.5;
+}
+
+.map{
+  height:430px;
+  border-radius:18px;
+  overflow:hidden;
+}
+
+.timeline{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.timeline-box{
+  padding:15px;
+  border-radius:15px;
+  text-align:center;
+  background:var(--card);
+}
+
+.timeline-box strong{
+  display:block;
+  font-size:20px;
+  margin:5px 0;
+}
+
+.forecast{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;
+}
+
+.forecast-card{
+  padding:15px 8px;
+  text-align:center;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:17px;
+}
+
+.forecast-icon{
+  font-size:34px;
+  margin:10px 0;
+}
+
+.forecast-card strong{
+  font-size:18px;
+}
+
+.forecast-card small{
+  color:var(--muted);
+}
+
+.resource-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+
+.resource{
+  padding:15px;
+  background:var(--card);
+  border-radius:15px;
+}
+
+.resource b{
+  display:block;
+  margin-bottom:5px;
+}
+
+.resource small{
+  color:var(--muted);
+}
+
+.favorites{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.fav{
+  padding:9px 13px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  border-radius:20px;
+}
+
+.checklist{
+  display:grid;
+  gap:8px;
+}
+
+.check-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:11px;
+  background:var(--card);
+  border-radius:12px;
+  font-size:14px;
+}
+
+.check-item input{
+  margin-top:3px;
+  accent-color:var(--blue);
+}
+
+.assistant{
+  position:fixed;
+  right:22px;
+  bottom:22px;
+  z-index:1000;
+}
+
+.assistant-button{
+  width:60px;
+  height:60px;
+  border:0;
+  border-radius:50%;
+  background:linear-gradient(135deg,#7867ff,#20c9ff);
+  color:white;
+  font-size:25px;
+  box-shadow:0 12px 35px rgba(0,0,0,.3);
+}
+
+.assistant-panel{
+  display:none;
+  position:absolute;
+  right:0;
+  bottom:72px;
+  width:330px;
+  background:#102638;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:20px;
+  padding:18px;
+  box-shadow:var(--shadow);
+}
+
+.assistant-panel.show{
+  display:block;
+}
+
+.assistant-panel h3{
+  margin-bottom:5px;
+}
+
+.assistant-panel p{
+  color:#b7c9d7;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.assistant-answer{
+  margin-top:12px;
+  padding:12px;
+  background:rgba(255,255,255,.07);
+  border-radius:13px;
+}
+
+footer{
+  text-align:center;
+  color:var(--muted);
+  padding:25px 0 0;
+  font-size:13px;
+}
+
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr}
+  .dashboard{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:650px){
+  .container{width:92%;padding-top:15px}
+  header{align-items:flex-start}
+  .brand h1{font-size:20px}
+  .brand small{display:none}
+  .search-area{grid-template-columns:1fr}
+  .primary{padding:14px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .risk-grid{grid-template-columns:1fr}
+  .dashboard{grid-template-columns:repeat(2,1fr)}
+  .forecast{
+    display:flex;
+    overflow-x:auto;
+    padding-bottom:5px;
+  }
+  .forecast-card{min-width:125px}
+  .timeline{grid-template-columns:1fr}
+  .resource-grid{grid-template-columns:1fr}
+  .temperature{font-size:52px}
+  .assistant-panel{
+    width:calc(100vw - 35px);
+    right:-5px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🌪️</div>
+    <div>
+      <h1>Weather <span>Checker</span></h1>
+      <small>Multi-Hazard Early Warning & Disaster Management</small>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <button class="icon-btn" onclick="toggleDark()" id="themeBtn">🌙</button>
+    <button class="icon-btn" onclick="saveFavorite()">⭐</button>
+  </div>
+</header>
+
+<!-- SEARCH -->
+<div class="search-area">
+  <div class="search-box">
+    <span>📍</span>
+    <input id="cityInput"
+           placeholder="Enter city name — Chennai, Mumbai, Delhi..."
+           onkeydown="if(event.key==='Enter')searchCity()">
+  </div>
+  <button class="primary" onclick="searchCity()">🔍 Check Weather</button>
+</div>
+
+<button class="location-btn" onclick="useLocation()">
+  📍 Use My Current Location
+</button>
+
+<div id="message" class="message"></div>
+
+<!-- MAIN WEATHER -->
+<div class="grid hero-grid">
+
+<section class="card">
+
+  <div class="location-title">
+    <div>
+      <h2 id="cityName">Chennai, India</h2>
+      <p class="muted" id="dateTime">Loading...</p>
+    </div>
+    <button class="favorite" onclick="saveFavorite()" id="star">☆</button>
+  </div>
+
+  <div class="weather-main">
+    <div class="weather-icon" id="weatherIcon">🌤️</div>
+    <div class="temperature">
+      <span id="temperature">--</span>°<span id="degreeUnit">C</span>
+    </div>
+    <div class="condition" id="condition">Loading weather...</div>
+    <div class="advice" id="advice">Checking today's conditions...</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">💧 Humidity</div>
+      <strong id="humidity">--%</strong>
+    </div>
+    <div class="stat">
+      <div class="label">💨 Wind</div>
+      <strong id="wind">-- km/h</strong>
+    </div>
+    <div class="stat">
+      <div class="label">👁️ Visibility</div>
+      <strong id="visibility">-- km</strong>
+    </div>
+    <div class="stat">
+      <div class="label">🌡️ Feels Like</div>
+      <strong id="feels">--°</strong>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">🌅 Sunrise</div>
+      <strong id="sunrise">--</strong>
+    </div>
+    <div class="stat">
+      <div class="label">🌇 Sunset</div>
+      <strong id="sunset">--</strong>
+    </div>
+    <div class="stat">
+      <div class="label">🌧️ Rain Chance</div>
+      <strong id="rainChance">--%</strong>
+    </div>
+    <div class="stat">
+      <div class="label">☁️ Cloud</div>
+      <strong id="cloud">--%</strong>
+    </div>
+  </div>
+
+  <div class="unit-switch">
+    <button id="cBtn" class="selected" onclick="setUnit('C')">°C</button>
+    <button id="fBtn" onclick="setUnit('F')">°F</button>
+  </div>
+
+</section>
+
+<!-- YOURS WC -->
+<section class="card">
+  <div class="section-title">
+    <h2>🤖 YOURS WC</h2>
+    <span class="muted">Smart Safety Assistant</span>
+  </div>
+
+  <div class="alert">
+    <h3 id="warningTitle">Checking risk...</h3>
+    <p id="warningText">
+      Weather and hazard conditions are being analyzed.
+    </p>
+
+    <div class="action">
+      <b>💡 What should I do now?</b>
+      <br>
+      <span id="actionText">Please wait for the latest analysis.</span>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="section-title">
+    <h2>🔔 Early Warning</h2>
+  </div>
+
+  <div class="action">
+    <b id="warningLevel">Monitoring</b>
+    <p class="muted" id="warningWindow">
+      Next 24 hours are being monitored.
+    </p>
+  </div>
+
+  <br>
+
+  <div class="section-title">
+    <h2>🌾 Agriculture Alert</h2>
+  </div>
+
+  <div class="action" id="agriculture">
+    Checking agricultural weather risk...
+  </div>
+</section>
+
+</div>
+
+<br>
+
+<!-- DISASTER COMMAND DASHBOARD -->
+<section class="card">
+
+<div class="section-title">
+  <h2>🖥️ Disaster Command Dashboard</h2>
+  <span class="muted">AI Risk Engine</span>
+</div>
+
+<div class="grid dashboard">
+
+  <div class="metric">
+    <span>🌊 Flood Risk</span>
+    <strong id="dashFlood">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🔥 Heat Risk</span>
+    <strong id="dashHeat">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🌪️ Cyclone / Wind</span>
+    <strong id="dashWind">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>⚡ Lightning</span>
+    <strong id="dashLightning">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🚨 Active Alerts</span>
+    <strong id="activeAlerts">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🔴 High Risk Zones</span>
+    <strong id="highZones">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🏘️ Affected Areas</span>
+    <strong id="affectedAreas">--</strong>
+  </div>
+
+  <div class="metric">
+    <span>🧠 Overall Risk</span>
+    <strong id="overallRisk">--</strong>
+  </div>
+
+</div>
+
+</section>
+
+<br>
+
+<!-- MULTI HAZARD -->
+<section class="card">
+
+<div class="section-title">
+  <h2>🚨 Multi-Hazard Risk Analysis</h2>
+  <span class="muted">Live weather-based estimate</span>
+</div>
+
+<div class="grid risk-grid">
+
+  <div class="risk-card">
+    <div class="risk-top">
+      <div>
+        <b>🌊 Flood Risk</b>
+        <div class="risk-score" id="floodScore">--</div>
+      </div>
+      <div class="risk-icon">🌊</div>
+    </div>
+    <div class="progress">
+      <span id="floodBar"></span>
+    </div>
+    <div class="risk-description" id="floodReason">
+      Rainfall + precipitation conditions.
+    </div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-top">
+      <div>
+        <b>🔥 Heatwave Risk</b>
+        <div class="risk-score" id="heatScore">--</div>
+      </div>
+      <div class="risk-icon">🔥</div>
+    </div>
+    <div class="progress">
+      <span id="heatBar"></span>
+    </div>
+    <div class="risk-description" id="heatReason">
+      Temperature + humidity.
+    </div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-top">
+      <div>
+        <b>🌪️ Strong Wind Risk</b>
+        <div class="risk-score" id="windScore">--</div>
+      </div>
+      <div class="risk-icon">🌪️</div>
+    </div>
+    <div class="progress">
+      <span id="windBar"></span>
+    </div>
+    <div class="risk-description" id="windReason">
+      Wind-speed analysis.
+    </div>
+  </div>
+
+  <div class="risk-card">
+    <div class="risk-top">
+      <div>
+        <b>⚡ Lightning Risk</b>
+        <div class="risk-score" id="lightningScore">--</div>
+      </div>
+      <div class="risk-icon">⚡</div>
+    </div>
+    <div class="progress">
+      <span id="lightningBar"></span>
+    </div>
+    <div class="risk-description" id="lightningReason">
+      Thunderstorm probability.
+    </div>
+  </div>
+
+</div>
+
+<br>
+
+<div class="risk-card">
+  <b>🌧️ Rainfall Anomaly</b>
+  <div class="risk-description" id="anomaly">
+    Comparing current rainfall conditions with a simplified baseline.
+  </div>
+</div>
+
+</section>
+
+<br>
+
+<!-- TIMELINE -->
+<section class="card">
+
+<div class="section-title">
+  <h2>🕐 Risk Timeline Prediction</h2>
+  <span class="muted">Estimated trend</span>
+</div>
+
+<div class="timeline">
+
+  <div class="timeline-box">
+    Next 3 Hours
+    <strong id="risk3">--</strong>
+    <small class="muted">Immediate conditions</small>
+  </div>
+
+  <div class="timeline-box">
+    Next 6 Hours
+    <strong id="risk6">--</strong>
+    <small class="muted">Short-term risk</small>
+  </div>
+
+  <div class="timeline-box">
+    Next 24 Hours
+    <strong id="risk24">--</strong>
+    <small class="muted">Extended risk</small>
+  </div>
+
+</div>
+
+</section>
+
+<br>
+
+<!-- FORECAST -->
+<section class="card">
+
+<div class="section-title">
+  <h2>📅 5-Day Weather & Hazard Forecast</h2>
+</div>
+
+<div class="forecast" id="forecast"></div>
+
+</section>
+
+<br>
+
+<!-- MAP -->
+<section class="card">
+
+<div class="section-title">
+  <h2>🗺️ Live Disaster Risk Map</h2>
+  <span class="muted">Location-based visualization</span>
+</div>
+
+<div id="map" class="map"></div>
+
+<br>
+
+<div class="risk-description">
+  🟢 Low &nbsp;&nbsp;
+  🟠 Moderate &nbsp;&nbsp;
+  🔴 High &nbsp;&nbsp;
+  ⛔ Critical
+  <br><br>
+  <b>Note:</b> This demonstration map visualizes calculated local risk.
+  It is not an official emergency warning map.
+</div>
+
+</section>
+
+<br>
+
+<!-- EMERGENCY RESOURCES -->
+<section class="card">
+
+<div class="section-title">
+  <h2>🏥 Emergency Resource Center</h2>
+  <span class="muted">Preparedness information</span>
+</div>
+
+<div class="resource-grid">
+
+  <div class="resource">
+    <b>🏥 Hospitals</b>
+    <small>Locate the nearest hospital or emergency medical center.</small>
+  </div>
+
+  <div class="resource">
+    <b>🏠 Safe Shelters</b>
+    <small>Use officially designated shelters during emergencies.</small>
+  </div>
+
+  <div class="resource">
+    <b>🧭 Safe Zones</b>
+    <small>Move toward safe, elevated areas when official evacuation guidance is issued.</small>
+  </div>
+
+  <div class="resource">
+    <b>🚒 Emergency Services</b>
+    <small>Contact local emergency services through official channels.</small>
+  </div>
+
+  <div class="resource">
+    <b>📢 Official Alerts</b>
+    <small>Always verify serious warnings with government authorities.</small>
+  </div>
+
+  <div class="resource">
+    <b>🧰 Emergency Kit</b>
+    <small>Keep water, food, medicines, flashlight and important documents ready.</small>
+  </div>
+
+</div>
+
+</section>
+
+<br>
+
+<!-- PREPAREDNESS -->
+<section class="card">
+
+<div class="section-title">
+  <h2>📋 Disaster Preparedness Checklist</h2>
+  <select id="disasterType" onchange="changeChecklist()">
+    <option value="general">General</option>
+    <option value="flood">Flood</option>
+    <option value="cyclone">Cyclone / Strong Wind</option>
+    <option value="heat">Heatwave</option>
+    <option value="lightning">Lightning</option>
+  </select>
+</div>
+
+<div class="checklist" id="checklist"></div>
+
+</section>
+
+<br>
+
+<!-- FAVORITES -->
+<section class="card">
+
+<div class="section-title">
+  <h2>⭐ Favorite Cities</h2>
+</div>
+
+<div class="favorites" id="favorites"></div>
+
+</section>
+
+<footer>
+  <b>Weather Checker</b> — AI-Based Multi-Hazard Weather Prediction & Disaster Management System
+  <br><br>
+  Prototype for educational / project demonstration purposes.
+</footer>
+
+</div>
+
+<!-- YOURS WC FLOATING ASSISTANT -->
+<div class="assistant">
+
+<button class="assistant-button" onclick="toggleAssistant()">🤖</button>
+
+<div class="assistant-panel" id="assistantPanel">
+
+  <h3>🤖 YOURS WC</h3>
+
+  <p>
+    Your Weather & Operational Risk Safety Assistant.
+    Ask yourself: “What should I do now?”
+  </p>
+
+  <div class="assistant-answer">
+    <b id="assistantTitle">Safety Assistant</b>
+    <p id="assistantText">
+      Weather conditions are being analyzed.
+    </p>
+  </div>
+
+</div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+/* =========================================================
+   WEATHER CHECKER
+   Multi-Hazard Risk Engine
+   ========================================================= */
+
+let weatherData = null;
+let currentCity = "Chennai";
+let currentCountry = "India";
+let currentLat = 13.0827;
+let currentLon = 80.2707;
+let unit = "C";
+let map = null;
+let marker = null;
+let riskCircle = null;
+
+
+/* Weather code -> icon + condition */
+const weatherCodes = {
+  0:["☀️","Clear Sky"],
+  1:["🌤️","Mainly Clear"],
+  2:["⛅","Partly Cloudy"],
+  3:["☁️","Cloudy"],
+  45:["🌫️","Foggy"],
+  48:["🌫️","Foggy"],
+  51:["🌦️","Light Drizzle"],
+  53:["🌦️","Drizzle"],
+  55:["🌧️","Heavy Drizzle"],
+  61:["🌦️","Light Rain"],
+  63:["🌧️","Rain"],
+  65:["🌧️","Heavy Rain"],
+  80:["🌦️","Rain Showers"],
+  81:["🌧️","Rain Showers"],
+  82:["⛈️","Heavy Showers"],
+  95:["⛈️","Thunderstorm"],
+  96:["⛈️","Thunderstorm"],
+  99:["⛈️","Severe Thunderstorm"]
+};
+
+
+/* =========================================================
+   SEARCH CITY
+   ========================================================= */
+
+async function searchCity(){
+
+  const city = document.getElementById("cityInput").value.trim();
+
+  if(!city){
+    showMessage("⚠️ Please enter a city name.");
+    return;
+  }
+
+  showMessage("🔎 Searching for " + city + "...");
+
+  try{
+
+    const response = await fetch(
+      "https://geocoding-api.open-meteo.com/v1/search?name="+
+      encodeURIComponent(city)+
+      "&count=1&language=en&format=json"
+    );
+
+    const result = await response.json();
+
+    if(!result.results || !result.results.length){
+      throw new Error("City not found");
+    }
+
+    const place = result.results[0];
+
+    currentCity = place.name;
+    currentCountry = place.country || "";
+    currentLat = place.latitude;
+    currentLon = place.longitude;
+
+    await loadWeather(currentLat,currentLon);
+
+  }catch(error){
+
+    showMessage(
+      "❌ City not found. Please check the spelling and try again."
+    );
+
+  }
+}
+
+
+/* =========================================================
+   WEATHER API
+   ========================================================= */
+
+async function loadWeather(lat,lon){
+
+  showMessage("🌐 Loading live weather and risk information...");
+
+  try{
+
+    const url =
+      "https://api.open-meteo.com/v1/forecast"+
+      "?latitude="+lat+
+      "&longitude="+lon+
+      "&current="+
+      "temperature_2m,"+
+      "relative_humidity_2m,"+
+      "apparent_temperature,"+
+      "weather_code,"+
+      "wind_speed_10m,"+
+      "cloud_cover"+
+      "&hourly="+
+      "visibility,"+
+      "precipitation_probability"+
+      "&daily="+
+      "weather_code,"+
+      "temperature_2m_max,"+
+      "temperature_2m_min,"+
+      "sunrise,"+
+      "sunset,"+
+      "precipitation_probability_max"+
+      "&timezone=auto"+
+      "&forecast_days=5";
+
+    const response = await fetch(url);
+
+    if(!response.ok){
+      throw new Error("Weather API error");
+    }
+
+    weatherData = await response.json();
+
+    renderWeather();
+
+    showMessage("");
+
+  }catch(error){
+
+    showMessage(
+      "⚠️ Weather service is temporarily unavailable."
+    );
+
+  }
+}
+
+
+/* =========================================================
+   RENDER WEATHER
+   ========================================================= */
+
+function renderWeather(){
+
+  const current = weatherData.current;
+  const daily = weatherData.daily;
+
+  const weather =
+    weatherCodes[current.weather_code] ||
+    ["🌤️","Unknown"];
+
+  document.getElementById("cityName").textContent =
+    currentCity +
+    (currentCountry ? ", " + currentCountry : "");
+
+  document.getElementById("dateTime").textContent =
+    new Date().toLocaleString("en-IN",{
+      weekday:"long",
+      day:"numeric",
+      month:"long",
+      hour:"2-digit",
+      minute:"2-digit"
+    });
+
+  document.getElementById("weatherIcon").textContent = weather[0];
+
+  document.getElementById("temperature").textContent =
+    Math.round(convertTemperature(current.temperature_2m));
+
+  document.getElementById("degreeUnit").textContent = unit;
+
+  document.getElementById("condition").textContent = weather[1];
+
+  document.getElementById("humidity").textContent =
+    current.relative_humidity_2m + "%";
+
+  document.getElementById("wind").textContent =
+    Math.round(current.wind_speed_10m) + " km/h";
+
+  document.getElementById("feels").textContent =
+    Math.round(convertTemperature(current.apparent_temperature))
+    + "°" + unit;
+
+  document.getElementById("cloud").textContent =
+    current.cloud_cover + "%";
+
+  document.getElementById("rainChance").textContent =
+    (daily.precipitation_probability_max[0] || 0) + "%";
+
+  document.getElementById("sunrise").textContent =
+    formatTime(daily.sunrise[0]);
+
+  document.getElementById("sunset").textContent =
+    formatTime(daily.sunset[0]);
+
+  const visibility =
+    weatherData.hourly.visibility[0] / 1000;
+
+  document.getElementById("visibility").textContent =
+    Math.round(visibility) + " km";
+
+  calculateRisks();
+
+  renderForecast();
+
+  updateMap();
+
+  updateAdvice();
+
+}
+
+
+/* =========================================================
+   RISK ENGINE
+   ========================================================= */
+
+function calculateRisks(){
+
+  const c = weatherData.current;
+  const d = weatherData.daily;
+
+  const rain =
+    d.precipitation_probability_max[0] || 0;
+
+  const temperature = c.temperature_2m;
+
+  const humidity = c.relative_humidity_2m;
+
+  const wind = c.wind_speed_10m;
+
+  const code = c.weather_code;
+
+  /* Flood score */
+  let flood = 0;
+
+  flood += rain * .65;
+
+  if(rain >= 80) flood += 20;
+  else if(rain >= 60) flood += 10;
+
+  if([61,63,65,80,81,82].includes(code)){
+    flood += 12;
+  }
+
+  flood = clamp(flood);
+
+  /* Heat score */
+  let heat = 0;
+
+  if(temperature >= 40) heat += 70;
+  else if(temperature >= 37) heat += 55;
+  else if(temperature >= 35) heat += 40;
+  else if(temperature >= 32) heat += 20;
+
+  if(humidity >= 75) heat += 15;
+  else if(humidity >= 60) heat += 8;
+
+  heat = clamp(heat);
+
+  /* Strong wind score */
+  let windRisk = 0;
+
+  if(wind >= 80) windRisk = 95;
+  else if(wind >= 60) windRisk = 80;
+  else if(wind >= 45) windRisk = 65;
+  else if(wind >= 30) windRisk = 40;
+  else windRisk = 10;
+
+  /* Lightning score */
+  let lightning = 5;
+
+  if([95,96,99].includes(code)){
+    lightning = 85;
+  }else if(
+    [80,81,82].includes(code)
+  ){
+    lightning = 35;
+  }
+
+  /* Rainfall anomaly */
+  let anomalyText = "";
+
+  if(rain >= 80){
+    anomalyText =
+      "🔴 Unusually high rainfall probability detected. "+
+      "Flood risk may increase in low-lying areas.";
+  }else if(rain >= 50){
+    anomalyText =
+      "🟠 Above-normal rainfall conditions may occur.";
+  }else if(rain <= 10){
+    anomalyText =
+      "🟡 Low rainfall conditions detected. "+
+      "Monitor drought and agriculture conditions.";
+  }else{
+    anomalyText =
+      "🟢 Rainfall conditions are currently within "+
+      "a normal simplified range.";
+  }
+
+  document.getElementById("anomaly").textContent =
+    anomalyText;
+
+  setRisk(
+    "floodScore",
+    "floodBar",
+    flood,
+    "Heavy rainfall probability may increase surface-water and flood risk."
+  );
+
+  setRisk(
+    "heatScore",
+    "heatBar",
+    heat,
+    "High temperature combined with humidity can increase heat stress."
+  );
+
+  setRisk(
+    "windScore",
+    "windBar",
+    windRisk,
+    "Strong winds can damage structures, trees and power infrastructure."
+  );
+
+  setRisk(
+    "lightningScore",
+    "lightningBar",
+    lightning,
+    "Thunderstorm conditions can increase lightning danger."
+  );
+
+  /* Dashboard */
+  document.getElementById("dashFlood").textContent =
+    riskLabel(flood);
+
+  document.getElementById("dashHeat").textContent =
+    riskLabel(heat);
+
+  document.getElementById("dashWind").textContent =
+    riskLabel(windRisk);
+
+  document.getElementById("dashLightning").textContent =
+    riskLabel(lightning);
+
+  const overall =
+    Math.round(
+      Math.max(flood,heat,windRisk,lightning)
+    );
+
+  document.getElementById("overallRisk").textContent =
+    overall + "/100";
+
+  let alerts = 0;
+
+  [flood,heat,windRisk,lightning].forEach(score=>{
+    if(score >= 60) alerts++;
+  });
+
+  document.getElementById("activeAlerts").textContent =
+    alerts;
+
+  document.getElementById("highZones").textContent =
+    Math.max(1,Math.round(overall/14));
+
+  document.getElementById("affectedAreas").textContent =
+    Math.max(1,Math.round(overall/10));
+
+  /* Timeline */
+  document.getElementById("risk3").textContent =
+    riskLabel(Math.round(overall*.82));
+
+  document.getElementById("risk6").textContent =
+    riskLabel(Math.round(overall*.92));
+
+  document.getElementById("risk24").textContent =
+    riskLabel(Math.min(100,Math.round(overall*1.05)));
+
+  updateWarning(overall,flood,heat,windRisk,lightning);
+
+}
+
+
+/* =========================================================
+   RISK CARD
+   ========================================================= */
+
+function setRisk(scoreId,barId,score,description){
+
+  const scoreElement =
+    document.getElementById(scoreId);
+
+  const bar =
+    document.getElementById(barId);
+
+  scoreElement.textContent =
+    Math.round(score) + "/100 — " + riskLabel(score);
+
+  scoreElement.className =
+    "risk-score " + riskClass(score);
+
+  bar.style.width =
+    Math.min(100,score) + "%";
+
+  bar.className =
+    riskClass(score) + "-bg";
+
+  const reason =
+    scoreId.replace("Score","Reason");
+
+  if(document.getElementById(reason)){
+    document.getElementById(reason).textContent =
+      description;
+  }
+}
+
+
+/* =========================================================
+   WARNING CENTER
+   ========================================================= */
+
+function updateWarning(
+  overall,
+  flood,
+  heat,
+  wind,
+  lightning
+){
+
+  let title = "🟢 LOW RISK";
+  let warning =
+    "No major weather-based hazard signal is currently detected.";
+  let action =
+    "Continue normal activities and monitor weather updates.";
+  let windowText =
+    "Conditions are being monitored.";
+
+  if(overall >= 80){
+
+    title = "⛔ CRITICAL RISK";
+
+    warning =
+      "Multiple hazardous conditions may be developing. "+
+      "Immediate attention to official warnings is recommended.";
+
+    action =
+      "Follow official emergency instructions. "+
+      "Prepare essential supplies and move to an officially "+
+      "designated safe location if instructed.";
+
+    windowText =
+      "Risk may increase within the next 3–6 hours.";
+
+  }else if(overall >= 60){
+
+    title = "🔴 HIGH RISK";
+
+    warning =
+      "A significant weather hazard signal has been detected.";
+
+    action =
+      "Stay alert, prepare essential items and follow "+
+      "official emergency information for your area.";
+
+    windowText =
+      "Risk may increase within the next 6 hours.";
+
+  }else if(overall >= 35){
+
+    title = "🟠 MODERATE RISK";
+
+    warning =
+      "Some weather conditions may produce localized impacts.";
+
+    action =
+      "Monitor updates and avoid unnecessary exposure "+
+      "if conditions worsen.";
+
+    windowText =
+      "Monitor conditions over the next 6–24 hours.";
+  }
+
+  document.getElementById("warningTitle").textContent =
+    title;
+
+  document.getElementById("warningText").textContent =
+    warning;
+
+  document.getElementById("actionText").textContent =
+    action;
+
+  document.getElementById("warningLevel").textContent =
+    title;
+
+  document.getElementById("warningWindow").textContent =
+    windowText;
+
+  document.getElementById("assistantTitle").textContent =
+    title;
+
+  document.getElementById("assistantText").textContent =
+    action;
+
+  document.getElementById("advice").textContent =
+    flood >= 60
+      ? "☔ Carry an umbrella and monitor flood warnings."
+      : heat >= 60
+      ? "🥤 High heat risk — stay hydrated and avoid peak heat."
+      : wind >= 60
+      ? "🌪️ Strong wind risk — avoid exposed outdoor areas."
+      : lightning >= 60
+      ? "⚡ Thunderstorm risk — move indoors and avoid open areas."
+      : "😎 No major immediate hazard signal detected.";
+
+  /* Agriculture message */
+  let agriculture =
+    "🌱 Normal monitoring recommended.";
+
+  if(heat >= 60){
+    agriculture =
+      "🔥 High heat may stress crops. Ensure appropriate irrigation "+
+      "and follow local agricultural guidance.";
+  }else if(flood >= 60){
+    agriculture =
+      "🌧️ Heavy rainfall may affect crops and field access. "+
+      "Monitor drainage and official agricultural advisories.";
+  }else if(rain <= 10){
+    agriculture =
+      "🌾 Low rainfall conditions detected. Farmers should monitor "+
+      "soil moisture and local agricultural advisories.";
+  }
+
+  document.getElementById("agriculture").textContent =
+    agriculture;
+
+}
+
+
+/* =========================================================
+   FORECAST
+   ========================================================= */
+
+function renderForecast(){
+
+  const box =
+    document.getElementById("forecast");
+
+  box.innerHTML = "";
+
+  const d = weatherData.daily;
+
+  d.time.forEach((date,index)=>{
+
+    const weather =
+      weatherCodes[d.weather_code[index]] ||
+      ["🌤️","Unknown"];
+
+    const max =
+      Math.round(
+        convertTemperature(
+          d.temperature_2m_max[index]
+        )
+      );
+
+    const min =
+      Math.round(
+        convertTemperature(
+          d.temperature_2m_min[index]
+        )
+      );
+
+    const rain =
+      d.precipitation_probability_max[index] || 0;
+
+    const day =
+      new Date(date).toLocaleDateString(
+        "en",{weekday:"short"}
+      );
+
+    box.innerHTML += `
+      <div class="forecast-card">
+        <b>${day}</b>
+        <div class="forecast-icon">${weather[0]}</div>
+        <strong>${max}°</strong> / ${min}°
+        <br>
+        <small>${weather[1]}</small>
+        <br><br>
+        <small>🌧️ ${rain}%</small>
+      </div>
+    `;
+
+  });
+
+}
+
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+function initMap(){
+
+  map = L.map("map").setView(
+    [currentLat,currentLon],
+    9
+  );
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      attribution:"© OpenStreetMap contributors"
+    }
+  ).addTo(map);
+
+}
+
+
+/* Update risk map */
+function updateMap(){
+
+  if(!map){
+    initMap();
+  }
+
+  map.setView(
+    [currentLat,currentLon],
+    9
+  );
+
+  if(marker){
+    map.removeLayer(marker);
+  }
+
+  if(riskCircle){
+    map.removeLayer(riskCircle);
+  }
+
+  const maxRisk =
+    Math.max(
+      currentRisk("flood"),
+      currentRisk("heat"),
+      currentRisk("wind"),
+      currentRisk("lightning")
+    );
+
+  let color = "#28d17c";
+
+  if(maxRisk >= 80){
+    color = "#ff334d";
+  }else if(maxRisk >= 60){
+    color = "#ff7043";
+  }else if(maxRisk >= 35){
+    color = "#ff9f43";
+  }
+
+  marker =
+    L.marker([currentLat,currentLon])
+    .addTo(map)
+    .bindPopup(
+      "<b>"+currentCity+"</b><br>"+
+      "Estimated Risk: "+
+      Math.round(maxRisk)+"/100"
+    )
+    .openPopup();
+
+  riskCircle =
+    L.circle(
+      [currentLat,currentLon],
+      {
+        radius:15000,
+        color:color,
+        fillColor:color,
+        fillOpacity:.18
+      }
+    ).addTo(map);
+
+}
+
+
+/* Store calculated risks for map */
+function currentRisk(type){
+
+  if(!weatherData) return 0;
+
+  const c = weatherData.current;
+  const d = weatherData.daily;
+
+  const rain =
+    d.precipitation_probability_max[0] || 0;
+
+  if(type==="flood"){
+    return clamp(rain*.65+(rain>=80?20:rain>=60?10:0));
+  }
+
+  if(type==="heat"){
+    let x=0;
+
+    if(c.temperature_2m>=40)x=70;
+    else if(c.temperature_2m>=37)x=55;
+    else if(c.temperature_2m>=35)x=40;
+    else if(c.temperature_2m>=32)x=20;
+
+    if(c.relative_humidity_2m>=75)x+=15;
+
+    return clamp(x);
+  }
+
+  if(type==="wind"){
+    if(c.wind_speed_10m>=80)return 95;
+    if(c.wind_speed_10m>=60)return 80;
+    if(c.wind_speed_10m>=45)return 65;
+    if(c.wind_speed_10m>=30)return 40;
+    return 10;
+  }
+
+  if(type==="lightning"){
+    return [95,96,99].includes(c.weather_code)
+      ? 85 : 5;
+  }
+
+  return 0;
+}
+
+
+/* =========================================================
+   LOCATION
+   ========================================================= */
+
+function useLocation(){
+
+  if(!navigator.geolocation){
+    showMessage(
+      "❌ Your browser does not support location services."
+    );
+    return;
+  }
+
+  showMessage("📍 Detecting your current location...");
+
+  navigator.geolocation.getCurrentPosition(
+
+    async position=>{
+
+      currentCity = "My Location";
+      currentCountry = "";
+
+      currentLat =
+        position.coords.latitude;
+
+      currentLon =
+        position.coords.longitude;
+
+      await loadWeather(
+        currentLat,
+        currentLon
+      );
+
+    },
+
+    ()=>{
+      showMessage(
+        "⚠️ Location permission was denied."
+      );
+    }
+
+  );
+
+}
+
+
+/* =========================================================
+   FAVORITES
+   ========================================================= */
+
+function saveFavorite(){
+
+  if(!currentCity) return;
+
+  let favorites =
+    JSON.parse(
+      localStorage.getItem("weatherFavorites") || "[]"
+    );
+
+  if(!favorites.includes(currentCity)){
+
+    favorites.push(currentCity);
+
+    localStorage.setItem(
+      "weatherFavorites",
+      JSON.stringify(favorites)
+    );
+
+    document.getElementById("star").textContent = "★";
+  }
+
+  renderFavorites();
+
+}
+
+
+function renderFavorites(){
+
+  const box =
+    document.getElementById("favorites");
+
+  const favorites =
+    JSON.parse(
+      localStorage.getItem("weatherFavorites") || "[]"
+    );
+
+  box.innerHTML = "";
+
+  if(!favorites.length){
+
+    box.innerHTML =
+      '<span class="muted">No favorite cities yet.</span>';
+
+    return;
+  }
+
+  favorites.forEach(city=>{
+
+    const button =
+      document.createElement("button");
+
+    button.className = "fav";
+
+    button.textContent = "⭐ " + city;
+
+    button.onclick = ()=>{
+
+      document.getElementById("cityInput").value =
+        city;
+
+      searchCity();
+
+    };
+
+    box.appendChild(button);
+
+  });
+
+}
+
+
+/* =========================================================
+   CHECKLIST
+   ========================================================= */
+
+const checklists = {
+
+  general:[
+    "Keep drinking water and essential medicines ready.",
+    "Keep a flashlight, batteries and power bank available.",
+    "Store important documents safely.",
+    "Monitor official emergency information.",
+    "Know the nearest safe shelter or evacuation location."
+  ],
+
+  flood:[
+    "Move important documents and electronics to higher areas.",
+    "Avoid walking or driving through flood water.",
+    "Keep drinking water and essential medicines ready.",
+    "Follow official evacuation instructions.",
+    "Move to higher ground if authorities advise evacuation."
+  ],
+
+  cyclone:[
+    "Secure loose outdoor objects.",
+    "Keep emergency food, water and medicines ready.",
+    "Stay indoors away from windows during severe conditions.",
+    "Charge phones and power banks.",
+    "Follow official cyclone and evacuation instructions."
+  ],
+
+  heat:[
+    "Drink water regularly.",
+    "Avoid unnecessary outdoor activity during peak heat.",
+    "Wear lightweight clothing.",
+    "Check on children and older people.",
+    "Use shade or cool indoor locations when possible."
+  ],
+
+  lightning:[
+    "Move indoors when thunderstorms approach.",
+    "Avoid open fields and isolated tall objects.",
+    "Do not shelter under isolated trees.",
+    "Stay away from water during thunderstorms.",
+    "Follow official severe-weather warnings."
+  ]
+
+};
+
+
+function changeChecklist(){
+
+  const type =
+    document.getElementById("disasterType").value;
+
+  const box =
+    document.getElementById("checklist");
+
+  box.innerHTML = "";
+
+  checklists[type].forEach((item,index)=>{
+
+    box.innerHTML += `
+      <label class="check-item">
+        <input type="checkbox"
+          onchange="saveChecklist()"
+          id="check${index}">
+        <span>${item}</span>
+      </label>
+    `;
+
+  });
+
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+function toggleDark(){
+
+  document.body.classList.toggle("light");
+
+  const light =
+    document.body.classList.contains("light");
+
+  localStorage.setItem(
+    "weatherTheme",
+    light ? "light" : "dark"
+  );
+
+  document.getElementById("themeBtn").textContent =
+    light ? "🌙" : "☀️";
+
+}
+
+
+/* =========================================================
+   ASSISTANT
+   ========================================================= */
+
+function toggleAssistant(){
+
+  document
+    .getElementById("assistantPanel")
+    .classList.toggle("show");
+
+}
+
+
+/* =========================================================
+   UNIT
+   ========================================================= */
+
+function setUnit(value){
+
+  unit = value;
+
+  document
+    .getElementById("cBtn")
+    .classList.toggle("selected",value==="C");
+
+  document
+    .getElementById("fBtn")
+    .classList.toggle("selected",value==="F");
+
+  if(weatherData){
+    renderWeather();
+  }
+
+}
+
+
+function convertTemperature(value){
+
+  if(unit==="F"){
+    return value*9/5+32;
+  }
+
+  return value;
+}
+
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
+function clamp(value){
+
+  return Math.max(
+    0,
+    Math.min(100,value)
+  );
+
+}
+
+
+function riskLabel(score){
+
+  score = Math.round(score);
+
+  if(score>=80)
+    return score+"/100 — CRITICAL";
+
+  if(score>=60)
+    return score+"/100 — HIGH";
+
+  if(score>=35)
+    return score+"/100 — MODERATE";
+
+  return score+"/100 — LOW";
+}
+
+
+function riskClass(score){
+
+  if(score>=80)return "critical";
+  if(score>=60)return "high";
+  if(score>=35)return "moderate";
+
+  return "low";
+}
+
+
+function formatTime(value){
+
+  return new Date(value).toLocaleTimeString(
+    [],
+    {
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+function showMessage(text){
+
+  const box =
+    document.getElementById("message");
+
+  box.textContent = text;
+
+  box.style.display =
+    text ? "block" : "none";
+
+}
+
+
+/* =========================================================
+   CHECKLIST STORAGE
+   ========================================================= */
+
+function saveChecklist(){
+
+  const checks =
+    [...document.querySelectorAll(
+      "#checklist input"
+    )].map(input=>input.checked);
+
+  localStorage.setItem(
+    "weatherChecklist",
+    JSON.stringify(checks)
+  );
+
+}
+
+
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
+
+function initialize(){
+
+  const savedTheme =
+    localStorage.getItem("weatherTheme");
+
+  if(savedTheme==="light"){
+    document.body.classList.add("light");
+    document.getElementById("themeBtn").textContent="🌙";
+  }
+
+  renderFavorites();
+
+  changeChecklist();
+
+  loadWeather(
+    currentLat,
+    currentLon
+  );
+
+}
+
+initialize();
+
+</script>
+
+</body>
+</html>
